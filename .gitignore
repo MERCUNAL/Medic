@@ -1,0 +1,14 @@
+# Python environment and caches
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local databases and data stores
+chroma_db/
+
+# API keys and secret environment variables
+.env
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
