@@ -8,7 +8,7 @@ from backend import get_response
 # PAGE CONFIG
 # =========================
 st.set_page_config(
-    page_title="Medical Chatbot",
+    page_title="Medic",
     page_icon="🩺",
     layout="wide"
 )
@@ -201,7 +201,7 @@ current_chat = st.session_state.all_chats[current_chat_id]
 # =========================
 # MAIN UI
 # =========================
-st.title("🩺 Medical Chatbot")
+st.title("🩺 Medic")
 st.markdown("Hello, how can we help you today?")
 
 # =========================
