@@ -4,8 +4,6 @@ __pycache__/
 .venv/
 venv/
 
-# Local databases and data stores
-chroma_db/
 
 # API keys and secret environment variables
 .env
