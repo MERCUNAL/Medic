@@ -24,13 +24,15 @@ from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START, END
 from typing_extensions import TypedDict, Annotated
-load_dotenv()
+import streamlit as st
+# load_dotenv()
 
 
 def load_vector_store():
 
     embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/gemini-embedding-001"
+        model="models/gemini-embedding-001",
+        google_api_key=st.secrets["GOOGLE_API_KEY"]
     )
 
     persist_directory = "./chroma_db"
@@ -77,74 +79,13 @@ def load_vector_store():
 
         ids.append(doc_id)
 
-    # # =========================
-    # # LOAD DOCX
-    # # =========================
-    # docx_file = "Log and sign.docx"
-
-    # if os.path.exists(docx_file):
-
-    #     doc = DocxDocument(docx_file)
-
-    #     full_text = []
-
-    #     for para in doc.paragraphs:
-
-    #         if para.text.strip():
-
-    #             full_text.append(para.text)
-
-    #     docx_text = "\n".join(full_text)
-
-    #     doc_id = "log_and_sign_doc"
-
-    #     documents.append(
-    #         Document(
-    #             page_content=docx_text,
-    #             metadata={
-    #                 "source": "docx",
-    #                 "id": doc_id
-    #             }
-    #         )
-    #     )
-
-    #     ids.append(doc_id)
-
-    # # =========================
-    # # FILTER NEW DOCS
-    # # =========================
-    # new_docs = []
-    # new_ids = []
-
-    # for doc, doc_id in zip(documents, ids):
-
-    #     if doc_id not in existing_ids:
-
-    #         new_docs.append(doc)
-    #         new_ids.append(doc_id)
-
-    # # =========================
-    # # ADD ONLY NEW DOCS
-    # # =========================
-    # if new_docs:
-
-    #     print(f"ADDING {len(new_docs)} NEW DOCUMENTS")
-
-    #     vector_store.add_documents(
-    #         documents=new_docs,
-    #         ids=new_ids
-    #     )
-
-    # else:
-
-    #     print("NO NEW DOCUMENTS TO EMBED")
-
     return vector_store
 vector_store = load_vector_store()
 
 llm = ChatGoogleGenerativeAI(
     model="models/gemini-3.1-flash-lite",
-    temperature=0.3
+    temperature=0.3,
+    google_api_key=st.secrets["GOOGLE_API_KEY"]
 )
 
 class State(TypedDict):
