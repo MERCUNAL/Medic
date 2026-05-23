@@ -1,70 +1,125 @@
 import os
 import time
+
 from dotenv import load_dotenv
+
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
+
 from docx import Document as DocxDocument
+
+
 load_dotenv()
 
+
+# =========================
+# EMBEDDINGS
+# =========================
 embeddings = GoogleGenerativeAIEmbeddings(
     model="models/gemini-embedding-001"
 )
 
+
+# =========================
+# CHROMADB
+# =========================
 vector_store = Chroma(
     collection_name="medical_data",
     embedding_function=embeddings,
     persist_directory="./chroma_db"
 )
 
+
+# =========================
+# EXISTING IDS
+# =========================
 existing = vector_store.get()
+
 existing_ids = set(existing["ids"])
 
 
-docx_file = "Log and sign.docx"
-doc_id = "log_and_sign_doc"
-faq_file = "FAQ.docx"
-faq_id = "faq_doc"
+# =========================
+# FUNCTION TO EMBED DOCX
+# =========================
+def embed_docx(file_path, base_id):
 
-if doc_id in existing_ids:
-    print("Login and Signup Document already embedded.")
+    if not os.path.exists(file_path):
 
-else:
-    print("Embedding new document...")
-    doc = DocxDocument(docx_file)
+        print(f"{file_path} not found.")
+        return
+
+    doc = DocxDocument(file_path)
+
     full_text = []
-    for para in doc.paragraphs:
-        if para.text.strip():
-            full_text.append(para.text)
-    docx_text = "\n".join(full_text)
-    document = Document(
-        page_content=docx_text,
-        metadata={
-            "source": "Log and sign.docx",
-            "id": doc_id
-        }
-    )
-if faq_id in existing_ids:
-    print("FAQ Document already embedded.")
 
-else:
-    print("Embedding new document...")
-    doc = DocxDocument(faq_file)
-    full_text1 = []
     for para in doc.paragraphs:
+
         if para.text.strip():
-            full_text1.append(para.text)
-    docx_text = "\n".join(full_text1)
-    document = Document(
-        page_content=docx_text,
-        metadata={
-            "source": "FAQ.docx",
-            "id": faq_id
-        }
-    )
-    vector_store.add_documents(
-        documents=[document],
-        ids=[doc_id]
-    )
-    time.sleep(3)
-    print("Document embedded successfully.")
+
+            full_text.append(para.text.strip())
+
+    # =========================
+    # CHUNKING
+    # =========================
+    chunks = []
+
+    current_chunk = ""
+
+    for para in full_text:
+
+        current_chunk += para + "\n"
+
+        if len(current_chunk) > 500:
+
+            chunks.append(current_chunk)
+            current_chunk = ""
+
+    if current_chunk:
+
+        chunks.append(current_chunk)
+
+    # =========================
+    # ADD CHUNKS
+    # =========================
+    for i, chunk in enumerate(chunks):
+
+        chunk_id = f"{base_id}_{i}"
+
+        if chunk_id in existing_ids:
+
+            print(f"{chunk_id} already exists.")
+            continue
+
+        print(f"Embedding {chunk_id}")
+
+        document = Document(
+            page_content=chunk,
+            metadata={
+                "source": file_path,
+                "id": chunk_id
+            }
+        )
+
+        vector_store.add_documents(
+            documents=[document],
+            ids=[chunk_id]
+        )
+
+        time.sleep(2)
+
+    print(f"{file_path} embedded successfully.")
+
+
+# =========================
+# EMBED FILES
+# =========================
+embed_docx(
+    "Log and sign.docx",
+    "log_and_sign"
+)
+
+embed_docx(
+    "FAQ.docx",
+    "faq"
+)

@@ -43,7 +43,6 @@ def load_vector_store():
         embedding_function=embeddings,
         persist_directory=persist_directory
     )
-
     # =========================
     # GET EXISTING IDS
     # =========================
@@ -60,11 +59,8 @@ def load_vector_store():
     df = pd.read_excel("Medical_list.xlsx")
 
     for index, row in df.iterrows():
-
         row_dict = row.to_dict()
-
         chunk_text = json.dumps(row_dict)
-
         doc_id = f"excel_{index}"
 
         documents.append(
@@ -76,9 +72,36 @@ def load_vector_store():
                 }
             )
         )
-
         ids.append(doc_id)
+        # =========================
+    # FILTER NEW DOCS
+    # =========================
+    new_docs = []
+    new_ids = []
 
+    for doc, doc_id in zip(documents, ids):
+
+        if doc_id not in existing_ids:
+
+            new_docs.append(doc)
+            new_ids.append(doc_id)
+
+
+    # =========================
+    # EMBED NEW DOCS
+    # =========================
+    if new_docs:
+
+        print(f"Embedding {len(new_docs)} new Excel documents")
+
+        vector_store.add_documents(
+            documents=new_docs,
+            ids=new_ids
+        )
+
+    else:
+
+        print("No new Excel documents to embed")
     return vector_store
 vector_store = load_vector_store()
 
@@ -96,18 +119,31 @@ memory = MemorySaver()
 
 prompt = ChatPromptTemplate.from_messages([
     (
-        "system",
-        """
-        You are a medical chatbot.
-        Communicate with the user like a chatbot, providing helpful and accurate information.
+        ("system",
+"""
+You are a helpful medical and support assistant.
 
-        Answer the user's question using only:
-        1. Retrieved documents
-        2. Chat history
+Communicate naturally like a chatbot.
 
-        Retrieved Documents:
-        {retrieved_docs}
-        """
+Answer the user's question ONLY using:
+1. Retrieved documents
+2. Chat history
+
+The retrieved documents may contain:
+- Medical device information
+- Login/signup instructions
+- FAQ information
+- Support/help content
+
+If the answer exists in the retrieved documents, answer clearly and directly.
+
+If the information is not found in the retrieved documents, say:
+"I could not find that information in the documents."
+
+Retrieved Documents:
+{retrieved_docs}
+"""
+)
     ),
     MessagesPlaceholder(variable_name="chat_history"),
 
