@@ -12,3 +12,5 @@ chroma_db/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
+
+streamlit/
