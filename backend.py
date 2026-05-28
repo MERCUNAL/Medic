@@ -52,7 +52,7 @@ def load_vector_store():
 
     documents = []
     ids = []
-
+    print(sorted(existing_ids))
     # =========================
     # LOAD EXCEL
     # =========================
@@ -73,13 +73,13 @@ def load_vector_store():
             )
         )
         ids.append(doc_id)
-        # =========================
+    # =========================
     # FILTER NEW DOCS
     # =========================
     new_docs = []
     new_ids = []
 
-    for doc, doc_id in zip(documents, ids):
+    for doc, doc_id in zip(documents, ids): 
 
         if doc_id not in existing_ids:
 
