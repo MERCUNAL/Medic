@@ -43,9 +43,7 @@ def load_vector_store():
         embedding_function=embeddings,
         persist_directory=persist_directory
     )
-    # =========================
     # GET EXISTING IDS
-    # =========================
     existing = vector_store.get()
 
     existing_ids = set(existing["ids"])
@@ -53,9 +51,9 @@ def load_vector_store():
     documents = []
     ids = []
     print(sorted(existing_ids))
-    # =========================
+    
     # LOAD EXCEL
-    # =========================
+    
     df = pd.read_excel("Medical_list.xlsx")
 
     for index, row in df.iterrows():
@@ -73,9 +71,9 @@ def load_vector_store():
             )
         )
         ids.append(doc_id)
-    # =========================
+    
     # FILTER NEW DOCS
-    # =========================
+    
     new_docs = []
     new_ids = []
 
@@ -87,9 +85,9 @@ def load_vector_store():
             new_ids.append(doc_id)
 
 
-    # =========================
+    
     # EMBED NEW DOCS
-    # =========================
+    
     if new_docs:
 
         print(f"Embedding {len(new_docs)} new Excel documents")
@@ -119,7 +117,7 @@ memory = MemorySaver()
 
 prompt = ChatPromptTemplate.from_messages([
     (
-        ("system",
+        "system",
 """
 You are a helpful medical and support assistant.
 
@@ -133,18 +131,31 @@ The retrieved documents may contain:
 - Medical device information
 - Login/signup instructions
 - FAQ information
-- Support/help content
 
 If the answer exists in the retrieved documents, answer clearly and directly.
 
 If the information is not found in the retrieved documents, say:
-"I could not find that information in the documents."
+"Sorry! I do not have that Information."
+
+IMPORTANT:
+At the end of every response, generate 3 short follow-up options the user may click.
+
+Return your response STRICTLY in this JSON format:
+
+{{
+  "answer": "main chatbot answer",
+  "options": [
+    "option 1",
+    "option 2",
+    "option 3"
+  ]
+}}
 
 Retrieved Documents:
 {retrieved_docs}
 """
-)
     ),
+
     MessagesPlaceholder(variable_name="chat_history"),
 
     (
@@ -193,8 +204,20 @@ def get_response(user_input, thread_id):
         },
         config=config
     )
-    return result["messages"][-1].content[0]['text']
+    # GET LAST MESSAGE
+    raw_response = result["messages"][-1].content
+    # HANDLE GEMINI RESPONSE FORMAT
+    if isinstance(raw_response, list):
 
+        raw_response = raw_response[0]["text"]
+    # PARSE JSON
+    try:
+        parsed = json.loads(raw_response)
+        answer = parsed.get("answer", "")
+        options = parsed.get("options", [])
+        return answer, options
 
-
+    except Exception as e:
+        print("JSON PARSE ERROR:", e)
+        return raw_response, []
 
