@@ -133,6 +133,8 @@ The retrieved documents may contain:
 - FAQ information
 
 If the answer exists in the retrieved documents, answer clearly and directly.
+At max present data only from 5 retrieved documents to avoid overwhelming the user.
+If the products are of different types, ask the user first which type does he want information about.
 
 If the information is not found in the retrieved documents, say:
 "Sorry! I do not have that Information."
@@ -169,7 +171,7 @@ def chat(state: State):
     question = state["messages"][-1].content
     retrieved_docs = vector_store.similarity_search(
         question,
-        k=3
+        k=7
     )
     response = chain.invoke({
         "retrieved_docs": retrieved_docs,
