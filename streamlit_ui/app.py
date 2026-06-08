@@ -1,7 +1,15 @@
 import streamlit as st
 import uuid
+import sys
+import os
 
-from backend import get_response
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..")
+)
+
+sys.path.append(PROJECT_ROOT)
+
+from rag.chatbot import get_response
 
 
 # =========================

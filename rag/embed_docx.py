@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import time
 
 from dotenv import load_dotenv
@@ -114,12 +115,16 @@ def embed_docx(file_path, base_id):
 # =========================
 # EMBED FILES
 # =========================
+from pathlib import Path
+import pandas as pd
+BASE_DIR = Path(__file__).resolve().parent.parent
+    
 embed_docx(
-    "Log and sign.docx",
+    BASE_DIR / "documents" / "Log and sign.docx",
     "log_and_sign"
 )
 
 embed_docx(
-    "FAQ.docx",
+    BASE_DIR / "documents" / "FAQ.docx",
     "faq"
 )

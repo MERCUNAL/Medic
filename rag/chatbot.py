@@ -27,6 +27,9 @@ from typing_extensions import TypedDict, Annotated
 import streamlit as st
 # load_dotenv()
 
+# GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+# google_api_key = GOOGLE_API_KEY
+
 
 def load_vector_store():
 
@@ -53,8 +56,13 @@ def load_vector_store():
     print(sorted(existing_ids))
     
     # LOAD EXCEL
-    
-    df = pd.read_excel("Medical_list.xlsx")
+    from pathlib import Path
+    import pandas as pd
+    BASE_DIR = Path(__file__).resolve().parent.parent
+
+    excel_file = BASE_DIR / "documents" / "Medical_list.xlsx"
+
+    df = pd.read_excel(excel_file)
 
     for index, row in df.iterrows():
         row_dict = row.to_dict()
