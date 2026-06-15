@@ -13,3 +13,4 @@ venv/
 
 .streamlit/
 chatbot.ipynb
+chroma_db/

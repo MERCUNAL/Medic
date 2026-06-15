@@ -321,4 +321,3 @@ if current_chat.get("suggestions"):
 
                 st.session_state.selected_option = option
                 st.rerun()
-

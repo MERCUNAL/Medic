@@ -1,4 +1,5 @@
 import pandas as pd
+import time
 from langchain_chroma import Chroma
 import json
 from langchain_core.documents import Document
@@ -25,20 +26,19 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START, END
 from typing_extensions import TypedDict, Annotated
 import streamlit as st
-# load_dotenv()
+load_dotenv()
 
-# GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-# google_api_key = GOOGLE_API_KEY
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 
 def load_vector_store():
 
     embeddings = GoogleGenerativeAIEmbeddings(
         model="models/gemini-embedding-001",
-        google_api_key=st.secrets["GOOGLE_API_KEY"]
+        google_api_key=GOOGLE_API_KEY
     )
 
-    persist_directory = "./chroma_db"
+    persist_directory = "./chroma_db_new"
 
     # LOAD CHROMADB
     vector_store = Chroma(
@@ -60,20 +60,20 @@ def load_vector_store():
     import pandas as pd
     BASE_DIR = Path(__file__).resolve().parent.parent
 
-    excel_file = BASE_DIR / "documents" / "Medical_list.xlsx"
+    excel_file = BASE_DIR / "documents" / "Medical_list_with_specs.csv"
 
-    df = pd.read_excel(excel_file)
+    df = pd.read_csv(excel_file)
 
     for index, row in df.iterrows():
         row_dict = row.to_dict()
         chunk_text = json.dumps(row_dict)
-        doc_id = f"excel_{index}"
+        doc_id = f"csv_{index}"
 
         documents.append(
             Document(
                 page_content=chunk_text,
                 metadata={
-                    "source": "excel",
+                    "source": "csv",
                     "id": doc_id
                 }
             )
@@ -92,29 +92,46 @@ def load_vector_store():
             new_docs.append(doc)
             new_ids.append(doc_id)
 
+ # EMBED IN BATCHES OF 100
+    batch_size = 100
 
-    
-    # EMBED NEW DOCS
-    
     if new_docs:
 
-        print(f"Embedding {len(new_docs)} new Excel documents")
+        for start in range(0, len(new_docs), batch_size):
 
-        vector_store.add_documents(
-            documents=new_docs,
-            ids=new_ids
-        )
+            end = start + batch_size
+
+            batch_docs = new_docs[start:end]
+            batch_ids = new_ids[start:end]
+
+            print(
+                f"Embedding batch "
+                f"{start // batch_size + 1}: "
+                f"{len(batch_docs)} documents"
+            )
+
+            vector_store.add_documents(
+                documents=batch_docs,
+                ids=batch_ids
+            )
+
+            # Wait 1 minute before the next batch
+            if end < len(new_docs):
+                print("Waiting 60 seconds before next batch...")
+                time.sleep(60)
 
     else:
+        print("No new CSV documents to embed")
 
-        print("No new Excel documents to embed")
     return vector_store
+
+
 vector_store = load_vector_store()
 
 llm = ChatGoogleGenerativeAI(
     model="models/gemini-3.1-flash-lite",
     temperature=0.3,
-    google_api_key=st.secrets["GOOGLE_API_KEY"]
+    google_api_key=GOOGLE_API_KEY
 )
 
 class State(TypedDict):
