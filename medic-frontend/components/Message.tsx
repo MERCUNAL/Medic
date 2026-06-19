@@ -28,8 +28,8 @@ export default function Message({
                     break-words
                     ${
                         isUser
-                            ? "bg-green-200 border border-green-300"
-                            : "bg-white border border-green-100 shadow-sm"
+                            ? "bg-green-200 text-black border border-green-300"
+                            : "bg-white text-black border border-green-100 shadow-sm"
                     }
                 `}
             >

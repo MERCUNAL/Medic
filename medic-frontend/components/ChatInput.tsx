@@ -67,6 +67,9 @@ export default function ChatInput({
                     rounded-xl
                     px-4
                     py-3
+                    text-black
+                    placeholder:text-gray-500
+                    bg-white
                     outline-none
                     focus:ring-2
                     focus:ring-green-300
