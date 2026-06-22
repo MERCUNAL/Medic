@@ -16,6 +16,8 @@ export interface Chats {
 export interface ChatRequest {
     query: string;
     thread_id: string;
+    user_role?: string;
+    user_location?: string;
 }
 
 export interface ChatResponse {

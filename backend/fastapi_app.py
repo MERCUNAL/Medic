@@ -19,24 +19,15 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     query: str
     thread_id: str
-
+    user_role: str = "general user"
+    user_location: str = "unknown"
 
 @app.post("/chat")
 async def chat(req: ChatRequest):
-
     answer, options = get_response(
         req.query,
-        req.thread_id
+        req.thread_id,
+        req.user_role,
+        req.user_location
     )
-
-    return {
-        "answer": answer,
-        "options": options
-    }
-
-
-@app.get("/")
-async def root():
-    return {
-        "status": "running"
-    }
+    return {"answer": answer, "options": options}

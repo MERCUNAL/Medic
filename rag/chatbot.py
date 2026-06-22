@@ -137,6 +137,8 @@ llm = ChatGoogleGenerativeAI(
 class State(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
     completed: bool
+    user_role: str
+    user_location: str
 memory = MemorySaver()
 
 
@@ -144,70 +146,51 @@ prompt = ChatPromptTemplate.from_messages([
     (
         "system",
 """
-You are a helpful medical and support assistant.
+You are a helpful medical equipment assistant.
 
-Communicate naturally like a chatbot.
+User context:
+- Role: {user_role}
+- Location: {user_location}
 
-Answer the user's question ONLY using:
-1. Retrieved documents
-2. Chat history
+Use this context to personalize your answers. For example:
+- If the user is a doctor, use clinical language
+- If the user is a buyer/procurement officer, focus on pricing and availability
+- Mention location-specific shipping or availability if relevant
 
-The retrieved documents may contain:
-- Medical device information
-- Login/signup instructions
-- FAQ information
+Answer ONLY using retrieved documents and chat history.
+If the answer is not in the documents, say: "Sorry! I do not have that information."
 
-If the answer exists in the retrieved documents, answer clearly and directly.
-At max present data only from 5 retrieved documents to avoid overwhelming the user.
-If the products are of different types, ask the user first which type does he want information about.
+At the end of every response, generate 3 short follow-up options.
 
-If the information is not found in the retrieved documents, say:
-"Sorry! I do not have that Information."
-
-IMPORTANT:
-At the end of every response, generate 3 short follow-up options the user may click.
-
-Return your response STRICTLY in this JSON format:
-
+Return STRICTLY in this JSON format:
 {{
   "answer": "main chatbot answer",
-  "options": [
-    "option 1",
-    "option 2",
-    "option 3"
-  ]
+  "options": ["option 1", "option 2", "option 3"]
 }}
 
 Retrieved Documents:
 {retrieved_docs}
 """
     ),
-
     MessagesPlaceholder(variable_name="chat_history"),
-
-    (
-        "human",
-        "{question}"
-    )
+    ("human", "{question}")
 ])
-chain = prompt | llm
-
+chain = prompt | llm  
+# Update chain invoke in chat() to accept context
 def chat(state: State):
     question = state["messages"][-1].content
-    retrieved_docs = vector_store.similarity_search(
-        question,
-        k=7
-    )
+    retrieved_docs = vector_store.similarity_search(question, k=7)
     response = chain.invoke({
         "retrieved_docs": retrieved_docs,
         "question": question,
-        "chat_history": state["messages"]
+        "chat_history": state["messages"],
+        "user_role": state.get("user_role", "general user"),
+        "user_location": state.get("user_location", "unknown")
     })
     return {
         "messages": [AIMessage(content=response.content)],
         "completed": True
     }
-
 
 graph_builder = StateGraph(State)
 graph_builder.add_node("chat", chat)
@@ -217,34 +200,22 @@ graph = graph_builder.compile(
     checkpointer=memory
 )
 
-def get_response(user_input, thread_id):
-    config = {
-        "configurable": {
-            "thread_id": thread_id
-        }
-    }
+def get_response(user_input, thread_id, user_role="general user", user_location="unknown"):
+    config = {"configurable": {"thread_id": thread_id}}
     result = graph.invoke(
         {
-            "messages": [
-                HumanMessage(content=user_input)
-            ]
+            "messages": [HumanMessage(content=user_input)],
+            "user_role": user_role,
+            "user_location": user_location
         },
         config=config
     )
-    # GET LAST MESSAGE
     raw_response = result["messages"][-1].content
-    # HANDLE GEMINI RESPONSE FORMAT
     if isinstance(raw_response, list):
-
         raw_response = raw_response[0]["text"]
-    # PARSE JSON
     try:
         parsed = json.loads(raw_response)
-        answer = parsed.get("answer", "")
-        options = parsed.get("options", [])
-        return answer, options
-
+        return parsed.get("answer", ""), parsed.get("options", [])
     except Exception as e:
         print("JSON PARSE ERROR:", e)
         return raw_response, []
-
