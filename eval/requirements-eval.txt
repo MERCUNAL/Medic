@@ -1,0 +1,16 @@
+# Evaluation-only dependencies for eval/run_ragas_eval.py
+#
+# Pinned because the latest ragas (0.4.x) currently breaks on import against
+# the latest langchain-community (it imports a vertexai submodule that was
+# removed upstream). These versions were verified together in a clean venv.
+# Install *in addition to* the project's root requirements.txt:
+#   pip install -r requirements.txt -r eval/requirements-eval.txt
+
+ragas==0.2.15
+langchain-community==0.3.27
+langchain-openai==0.3.28
+langchain-google-genai==2.0.11
+langchain-chroma==0.2.6
+langchain-core<0.4
+langgraph<1.0
+datasets
