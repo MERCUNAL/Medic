@@ -21,6 +21,15 @@ from langchain_core.messages import (
     AIMessage,
     AnyMessage
 )
+# --- NEW: BM25 (sparse/keyword) retriever + ensemble fusion ---
+from langchain_community.retrievers import BM25Retriever
+try:
+    # langchain <1.0
+    from langchain.retrievers import EnsembleRetriever
+except ImportError:
+    # langchain >=1.0 split EnsembleRetriever out into langchain_classic
+    from langchain_classic.retrievers.ensemble import EnsembleRetriever
+
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START, END
@@ -125,7 +134,55 @@ def load_vector_store():
     return vector_store
 
 
+def load_bm25_retriever(k: int = 7):
+    """
+    Build a BM25 (sparse / keyword-overlap) retriever over every document
+    currently sitting in the Chroma collection.
+
+    We pull straight from Chroma (via .get()) instead of re-reading the CSV
+    so this stays in sync with the *actual* embedded corpus -- CSV rows,
+    docx chunks (FAQ / Log & sign), and anything embedded in future --
+    without needing a second source of truth.
+
+    BM25 is a lexical/term-frequency ranker. It's included alongside the
+    dense embedding retriever because it's much stronger at exact-match
+    lookups (model numbers, SKUs, spec keywords like "1000 VA" or
+    "MRI compatible") that embeddings can sometimes blur or miss.
+    """
+    raw = vector_store.get(include=["documents", "metadatas"])
+
+    docs = [
+        Document(page_content=content, metadata=metadata or {})
+        for content, metadata in zip(raw["documents"], raw["metadatas"])
+    ]
+
+    if not docs:
+        # BM25Retriever.from_documents() errors out on an empty corpus,
+        # so fall back to a single empty doc rather than crashing at import.
+        docs = [Document(page_content="", metadata={})]
+
+    bm25_retriever = BM25Retriever.from_documents(docs)
+    bm25_retriever.k = k
+
+    return bm25_retriever
+
+
 vector_store = load_vector_store()
+
+# --- NEW: hybrid retrieval setup ---
+# Dense (semantic) retriever, wrapping the existing Chroma vector store.
+vector_retriever = vector_store.as_retriever(search_kwargs={"k": 7})
+
+# Sparse (keyword / BM25) retriever, built from the same corpus.
+bm25_retriever = load_bm25_retriever(k=7)
+
+# Fuse both rankings via Reciprocal Rank Fusion. Weights favor the dense
+# retriever slightly (0.6) while still letting BM25 (0.4) surface exact
+# keyword/spec matches that embeddings alone might rank lower.
+hybrid_retriever = EnsembleRetriever(
+    retrievers=[bm25_retriever, vector_retriever],
+    weights=[0.4, 0.6]
+)
 
 llm = ChatGoogleGenerativeAI(
     model="models/gemini-3.1-flash-lite",
@@ -178,7 +235,8 @@ chain = prompt | llm
 # Update chain invoke in chat() to accept context
 def chat(state: State):
     question = state["messages"][-1].content
-    retrieved_docs = vector_store.similarity_search(question, k=7)
+    # --- CHANGED: was vector_store.similarity_search(question, k=7) ---
+    retrieved_docs = hybrid_retriever.invoke(question)
     response = chain.invoke({
         "retrieved_docs": retrieved_docs,
         "question": question,
