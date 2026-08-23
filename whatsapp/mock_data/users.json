@@ -1,0 +1,26 @@
+[
+  {
+    "phone": "919999999991",
+    "name": "Dr. Arjun Mehta",
+    "role": "Doctor",
+    "location": "Mumbai",
+    "email": "arjun.mehta@example.com",
+    "previousOrders": ["ORD-1001", "ORD-1002"]
+  },
+  {
+    "phone": "919999999992",
+    "name": "City Hospital Procurement",
+    "role": "Hospital Procurement",
+    "location": "Delhi",
+    "email": "procurement@cityhospital.in",
+    "previousOrders": ["ORD-1003"]
+  },
+  {
+    "phone": "919999999993",
+    "name": "Priya Sharma",
+    "role": "Individual Buyer",
+    "location": "Pune",
+    "email": "priya.sharma@example.com",
+    "previousOrders": []
+  }
+]

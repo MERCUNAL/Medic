@@ -1,0 +1,63 @@
+[
+  {
+    "id": "ORD-1001",
+    "phone": "919999999991",
+    "status": "shipped",
+    "items": [
+      {"csv_id": "csv_7", "name": "BP-Basic BP-9962A", "qty": 1, "price": 1200},
+      {"csv_id": "csv_54", "name": "Vital-Plus Vital-4475X", "qty": 1, "price": 64000}
+    ],
+    "total": 65200,
+    "trackingCode": "AWB-DEL-782341",
+    "courierUrl": "https://tracking.example.com/AWB-DEL-782341",
+    "courier": "Delhivery",
+    "eta": "2026-08-27",
+    "createdAt": "2026-08-20T10:30:00Z",
+    "updatedAt": "2026-08-23T08:00:00Z"
+  },
+  {
+    "id": "ORD-1002",
+    "phone": "919999999991",
+    "status": "delivered",
+    "items": [
+      {"csv_id": "csv_62", "name": "Oxi-Ultra Oxi-6656X", "qty": 2, "price": 1300}
+    ],
+    "total": 2600,
+    "trackingCode": "AWB-DEL-782340",
+    "courierUrl": "https://tracking.example.com/AWB-DEL-782340",
+    "courier": "Delhivery",
+    "eta": "2026-08-18",
+    "createdAt": "2026-08-15T14:00:00Z",
+    "updatedAt": "2026-08-18T12:00:00Z"
+  },
+  {
+    "id": "ORD-1003",
+    "phone": "919999999992",
+    "status": "placed",
+    "items": [
+      {"csv_id": "csv_17", "name": "Cardio-Pro Cardio-5439B", "qty": 1, "price": 41000}
+    ],
+    "total": 41000,
+    "trackingCode": "AWB-BOM-900112",
+    "courierUrl": "https://tracking.example.com/AWB-BOM-900112",
+    "courier": "Bluedart",
+    "eta": "2026-08-28",
+    "createdAt": "2026-08-22T09:00:00Z",
+    "updatedAt": "2026-08-22T09:00:00Z"
+  },
+  {
+    "id": "ORD-1004",
+    "phone": "919999999993",
+    "status": "cancelled",
+    "items": [
+      {"csv_id": "csv_40", "name": "InsuInject-Ultra InsuInject-9461", "qty": 5, "price": 50}
+    ],
+    "total": 250,
+    "trackingCode": null,
+    "courierUrl": null,
+    "courier": null,
+    "eta": null,
+    "createdAt": "2026-08-10T11:00:00Z",
+    "updatedAt": "2026-08-11T10:00:00Z"
+  }
+]
