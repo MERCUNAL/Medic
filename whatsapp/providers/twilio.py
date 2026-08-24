@@ -36,10 +36,6 @@ class TwilioProvider(WhatsAppProvider):
         if not sid or not token:
             print(f"[TWILIO MOCK] to={to_phone} text={text[:120]} buttons={buttons} (SID/TOKEN missing -> not sending to Twilio)")
             return {"mock": True, "to": to_phone, "body": text}
-        if sid.startswith("AC22cd02"):
-            print(f"[TWILIO WARNING] Placeholder SID still in .env – using mock. Replace with real SID from console.twilio.com")
-            print(f"[TWILIO MOCK] to={to_phone} text={text[:120]}")
-            return {"mock": True, "to": to_phone, "body": text, "warning": "placeholder SID"}
         # Twilio can't send interactive buttons via simple Messages API – send as text + numbered options
         if buttons:
             text = text + "\n\n" + "\n".join([f"{i+1}. {b['title']} (reply {b['id']})" for i, b in enumerate(buttons)])

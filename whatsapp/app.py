@@ -36,5 +36,4 @@ async def health():
         "wa_number": os.getenv("WHATSAPP_NUMBER") or cfg.WHATSAPP_NUMBER,
         "twilio_configured": bool((os.getenv("TWILIO_ACCOUNT_SID") or cfg.TWILIO_ACCOUNT_SID) and (os.getenv("TWILIO_AUTH_TOKEN") or cfg.TWILIO_AUTH_TOKEN)),
         "twilio_from": os.getenv("TWILIO_WHATSAPP_FROM") or cfg.TWILIO_WHATSAPP_FROM,
-        "is_placeholder_sid": (os.getenv("TWILIO_ACCOUNT_SID") or cfg.TWILIO_ACCOUNT_SID or "").startswith("AC22cd02"),
     }

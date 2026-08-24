@@ -92,11 +92,27 @@ async def inbound(request: Request):
         role = state.get("role") or (user.role if user else "general user")
         location = state.get("location") or (user.location if user else "unknown")
 
-        # Determine intent
-        lower = (text + " " + btn_id).lower()
+        # Determine intent - normalized (strip to avoid "hi " != "hi" bug)
+        text_lower = text.strip().lower()
+        combined_lower = (text + " " + btn_id).lower().strip()
+        lower = combined_lower  # keep alias for legacy checks
+
+        # --- Direct replies without RAG (no HTTP to backend) ---
+        # These are answered locally from code/mock_data/catalog, saving RAG cost/latency
+        DIRECT_REPLIES = {
+            "help": "🆘 *dKart Help*\n• `catalog` or `catalog BP` → browse products\n• `track` → active orders\n• `ORD-1001` → tracking link\n• any medical question → Medic AI\n• `menu` → this help",
+            "menu": "📋 *Menu*\n1. Browse Catalog (`catalog`)\n2. Track Order (`track`)\n3. Ask Medic (`what is BP-Advance price?`)",
+        }
+        if text_lower in DIRECT_REPLIES:
+            await provider.send_text(phone, DIRECT_REPLIES[text_lower])
+            continue
+        if text_lower in ("hi", "hello", "hey", "start"):
+            # Greeting without RAG – shows help + catalog entry
+            await provider.send_text(phone, f"👋 Hi {user.name if user else ''}! Welcome to dKart Medical.\n{DIRECT_REPLIES['help']}", buttons=[{"id":"catalog","title":"Browse Catalog"},{"id":"track","title":"Track Order"}])
+            continue
 
         # Product selection from list/catalog
-        if msg.product_retailer_id or (btn_id and btn_id.startswith("csv_")) or (lower.startswith("csv_")):
+        if msg.product_retailer_id or (btn_id and btn_id.startswith("csv_")) or (combined_lower.startswith("csv_")):
             prid = msg.product_retailer_id or btn_id or text.strip()
             item = catalog_service.get_item(prid)
             if item:
@@ -104,11 +120,11 @@ async def inbound(request: Request):
                 await provider.send_text(phone, detail, buttons=[{"id":"catalog","title":"Browse Catalog"},{"id":"track","title":"Track Order"},{"id":"ask","title":"Ask Assistant"}])
                 continue
 
-        if "catalog" in lower or "product" in lower or "browse" in lower or lower in ("hi","hello","hey","menu","start"):
+        if "catalog" in combined_lower or "product" in combined_lower or "browse" in combined_lower:
             # Show catalog – use product_list if meta + catalog_id else list
             q = "" 
             # if user typed "catalog bp" extract query
-            if lower.startswith("catalog"):
+            if combined_lower.startswith("catalog"):
                 q = text[len("catalog"):].strip()
             res = catalog_service.list_catalog(q=q, page=1, limit=10)
             items = res["items"]
@@ -124,13 +140,13 @@ async def inbound(request: Request):
                 await provider.send_interactive_list(phone, "dKart Catalog", f"Found {res['total']} items. Select one:", "View Products", sections)
             continue
 
-        if "track" in lower or "order" in lower or "where" in lower or "status" in lower:
+        if "track" in combined_lower or "order" in combined_lower or "where" in combined_lower or "status" in combined_lower:
             orders = get_orders(phone, current_only=True)
             if not orders:
                 # No current -> show previous + fallback to RAG
                 await provider.send_text(phone, "You have no active orders at the moment.\n\nYou can still:\n• Browse catalog (reply *catalog*)\n• Ask our Medic Assistant anything (just type your question)", buttons=[{"id":"catalog","title":"Browse Catalog"},{"id":"ask","title":"Ask Assistant"}])
                 # Also push to RAG if they asked a question beyond tracking intent
-                if len(text.split()) > 2 and "track" not in lower:
+                if len(text.split()) > 2 and "track" not in combined_lower:
                     try:
                         rag = await query_rag(text, thread_for_phone(phone), role, location)
                         await provider.send_text(phone, rag.get("answer","Sorry! I do not have that information."))
